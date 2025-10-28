@@ -8,10 +8,9 @@
  * Muestra todos los nombres de todas las películas con una clasificación por edades de 'R'
  */
 
-select *
+select f.title
 from film f
 where f.rating = 'R' -- Se filtra por el rating de la película
-order by f.release_year desc; -- no tengo claro a que se refiere cuando habla de clasificación por edades, así que ordeno por fecha
 
 /* 
 Ejercicio 3.
@@ -30,7 +29,7 @@ Obtén las películas cuyo idioma coincide con el idioma original.
 
 select *
 from film f
-where f.language_id = f.original_language_id or f.original_language_id is not null; -- devuelve una tabla vacía porque todas son NULL.
+where f.language_id = f.original_language_id; -- devuelve una tabla vacía porque todas son NULL.
 
 /* 
 Ejercicio 5.
@@ -70,7 +69,7 @@ duración mayor a 3 horas en la tabla film.
 
 select f.title, f.length, f.rating -- Mostramos rating y lenght para comprobar que está OK.
 from film f
-where f.rating = 'PG-13' and f.length > 3*60; -- al estar indicadas en minutos, lo indicamos en minutos
+where f.rating = 'PG-13' or f.length > 3*60; -- al estar indicadas en minutos, lo indicamos en minutos
 
 
 /*
@@ -248,7 +247,7 @@ order by promedio_duracion desc;
 Ejercicio 21. 
 ¿Cuál es la media de duración del alquiler de las películas?
 */
-select (extract(day from r.return_date - r.rental_date)) as media_duración_alquiler
+select AVG(extract(day from r.return_date - r.rental_date)) as media_duración_alquiler
 from rental r;
 
 /* 
@@ -330,7 +329,7 @@ mostrar la cantidad disponible.
 */
 select f.film_id , count(i.store_id) as cantida_disponible
 from film f 
-join inventory i on f.film_id = i.film_id 
+left join inventory i on f.film_id = i.film_id 
 group by f.film_id
 order by f.film_id asc;
 
@@ -364,8 +363,8 @@ order by fa.film_id asc, Actor asc;
 -- otra opción con joins
 select fa.film_id, f.title, concat(a.first_name ,' ', a.last_name) as NombreActor
 from film_actor fa
-join film f on f.film_id = fa.film_id 
-join actor a on a.actor_id = fa.actor_id 
+left join film f on f.film_id = fa.film_id 
+left join actor a on a.actor_id = fa.actor_id 
 where f.film_id = fa.film_id and
 a.actor_id = fa.actor_id -- estas dos líneas creo que son redundantes.
 order by f.film_id asc, nombreactor asc;
@@ -388,8 +387,8 @@ from film_actor fa;
 -- mediante join
 select a.actor_id, concat(a.first_name, ' ', a.last_name) as Actor, f.title
 from film_actor fa
-join film f on fa.film_id = f.film_id
-join actor a on fa.actor_id = a.actor_id 
+left join film f on fa.film_id = f.film_id
+left join actor a on fa.actor_id = a.actor_id 
 order by a.actor_id asc, f.title asc;
 
 /* 
@@ -397,12 +396,15 @@ order by a.actor_id asc, f.title asc;
  Obtener todas las películas que tenemos y todos los registros de 
 alquiler.
  */
-
-select i.inventory_id, count(i.store_id) as Cantidad_inventario, count(r.rental_id) as Registros_alquiler
-from inventory i
-join rental r on i.inventory_id = r.inventory_id 
-group by i.inventory_id 
-order by i.inventory_id asc;
+SELECT 
+    f.title AS nombre_pelicula,
+    COUNT(DISTINCT i.inventory_id) AS cantidad_inventario,
+    COUNT(r.rental_id) AS registros_alquiler
+FROM film f
+LEFT JOIN inventory i ON f.film_id = i.film_id
+LEFT JOIN rental r ON i.inventory_id = r.inventory_id
+GROUP BY f.film_id, f.title
+ORDER BY f.title ASC;
 
 /* 
  * Ejercicio 34.
@@ -470,7 +472,7 @@ ascendente.
 */
 select a.last_name, a.first_name, a.actor_id 
 from actor a
-order by a.last_name desc;
+order by a.last_name asc;
 
 /*
  * Ejercicio 40.
@@ -848,9 +850,12 @@ order by c.category_id;
 Ejercicio 62.
  Encuentra el número de películas por categoría estrenadas en 2006.
 */
-select count(distinct f.film_id)
+select count(distinct f.film_id) as numero_peliculas, c.name as categoria
 from film f
-where f.release_year = 2006;
+join film_category fc on f.film_id = fc.film_id 
+join category c on fc.category_id = c.category_id 
+where f.release_year = 2006
+group by c.name;
 
 /*
 Ejercicio 63
